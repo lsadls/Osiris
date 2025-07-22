@@ -1,0 +1,48 @@
+name: Windows
+
+on: 
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Clone
+      shell: bash
+      run: git clone --recurse-submodules https://github.com/danielkrupinski/Osiris
+
+    - name: Build solution
+      working-directory: ./Osiris
+      env:
+        SOLUTION_FILE_PATH: ./Osiris.sln
+        BUILD_CONFIGURATION: Release
+      run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
+
+    - name: Removing unused files
+      shell: bash
+      run: |
+        ls -lR --group-directories-first
+        rm -rf ./Osiris/x64/Release/*.pdb
+        rm -rf ./Osiris/x64/Release/*.ipdb
+        rm -rf ./Osiris/x64/Release/*.obj
+        rm -rf ./Osiris/x64/Release/*.iobj
+        rm -rf ./Osiris/x64/Release/*.txt
+        rm -rf ./Osiris/x64/Release/*.recipe
+        rm -rf ./Osiris/x64/Release/*.tlog
+      
+    - name: Upload to github
+      uses: actions/upload-artifact@v4
+      with:
+        name: Osiris
+        path: ./Osiris/x64/Release/*
+        if-no-files-found: error
